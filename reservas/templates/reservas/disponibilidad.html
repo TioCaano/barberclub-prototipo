@@ -1,0 +1,10 @@
+{% extends "reservas/base.html" %}{% block content %}
+<p class="paso">Paso 2 de 4</p><h1>Disponibilidad en las 4 sucursales</h1><p class="sub">Elige sucursal, barbero y fecha (RF-01)</p>
+<div class="card"><form class="filtros" method="get">
+<div><label>Sucursal</label><select name="sucursal"><option value="">Todas</option>{% for s in sucursales %}<option value="{{ s.pk }}" {% if filtro_sucursal == s.pk|stringformat:"s" %}selected{% endif %}>{{ s.nombre }}</option>{% endfor %}</select></div>
+<div><label>Barbero</label><select name="barbero"><option value="">Cualquiera</option>{% for b in todos_barberos %}<option value="{{ b.pk }}" {% if filtro_barbero == b.pk|stringformat:"s" %}selected{% endif %}>{{ b.nombre }}</option>{% endfor %}</select></div>
+<div><label>Fecha</label><input type="date" name="fecha" value="{{ fecha }}"></div>
+<button class="btn" type="submit">Buscar</button></form></div>
+{% for barbero, bloques in resultados %}<div class="card"><strong>{{ barbero.nombre }}</strong> · <span class="sub">{{ barbero.sucursal.nombre }} ({{ barbero.sucursal.comuna }})</span>
+<div class="slots">{% for h in bloques %}<a href="{% url 'agendar' %}?barbero={{ barbero.pk }}&fecha={{ fecha }}&hora={{ h|time:'H:i' }}">{{ h|time:"H:i" }}</a>{% empty %}<span class="sub">Sin horas disponibles</span>{% endfor %}</div></div>
+{% endfor %}{% endblock %}

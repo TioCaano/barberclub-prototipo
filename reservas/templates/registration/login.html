@@ -1,0 +1,8 @@
+{% extends "reservas/base.html" %}{% block content %}
+<div class="card" style="max-width:380px;margin:40px auto">
+<p class="paso">Paso 1 de 4</p><h1>Iniciar sesión</h1><p class="sub">Clientes, barberos y administradores (RF-10)</p>
+{% if form.errors %}<div class="msg error">Usuario o contraseña incorrectos.</div>{% endif %}
+<form method="post">{% csrf_token %}
+<p><label>Usuario</label><input name="username" required style="width:100%"></p>
+<p><label>Contraseña</label><input type="password" name="password" required style="width:100%"></p>
+<button class="btn" type="submit">Ingresar</button></form></div>{% endblock %}

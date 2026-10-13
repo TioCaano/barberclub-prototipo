@@ -1,0 +1,7 @@
+{% extends "reservas/base.html" %}{% block content %}
+<p class="paso">Paso 3 de 4</p><h1>Confirmar reserva</h1><p class="sub">{{ barbero.nombre }} · {{ barbero.sucursal.nombre }} · {{ fecha }} a las {{ hora }}</p>
+<div class="card"><form method="post">{% csrf_token %}
+<input type="hidden" name="barbero" value="{{ barbero.pk }}"><input type="hidden" name="fecha" value="{{ fecha }}"><input type="hidden" name="hora" value="{{ hora }}">
+<p><label>Servicio</label><select name="servicio">{% for s in servicios %}<option value="{{ s.pk }}">{{ s }}</option>{% endfor %}</select></p>
+<p><label>Corte o estilo preferido (opcional, RF-09)</label><input name="tipo_corte_preferido" placeholder="Ej: degradado bajo" style="width:100%"></p>
+<button class="btn" type="submit">Reservar y pagar anticipo</button></form></div>{% endblock %}

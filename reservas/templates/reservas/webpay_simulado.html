@@ -1,0 +1,6 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Webpay (simulado)</title>
+<style>body{font-family:system-ui;background:#eef1f6;margin:0}.box{max-width:420px;margin:60px auto;background:#fff;border-radius:10px;padding:24px;box-shadow:0 2px 10px #0001}
+h2{margin:0 0 6px;color:#d5006d}.n{color:#666;font-size:13px}button{padding:10px 16px;border:0;border-radius:6px;margin-right:8px;cursor:pointer;font-size:14px}.a{background:#1f7a4a;color:#fff}.r{background:#b3261e;color:#fff}</style></head>
+<body><div class="box"><h2>Webpay Plus · ambiente de integración (simulado)</h2><p class="n">Pasarela externa — fuera del sistema BarberClub</p>
+<p>Orden de compra: <b>{{ trx.buy_order }}</b><br>Monto: <b>${{ trx.amount }}</b></p>
+<form method="post">{% csrf_token %}<button class="a" name="accion" value="aprobar">Aprobar pago</button><button class="r" name="accion" value="rechazar">Rechazar pago</button></form></div></body></html>
