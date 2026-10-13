@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,12 +21,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-142j2&k5j(wcj=qen$@a-k3xresrslz8h41_%wdm6y1c7ze1d="
+# D8 (OWASP A02): secretos y modo debug se leen del entorno, nunca del código.
+DEBUG = os.environ.get("DJANGO_DEBUG", "1") == "1"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or (
+    "solo-para-desarrollo-local-no-usar-en-produccion" if DEBUG else None)
+if not SECRET_KEY:
+    raise RuntimeError("Falta la variable de entorno DJANGO_SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,testserver").split(",")
 
 
 # Application definition
@@ -125,3 +130,23 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'disponibilidad'
 LOGOUT_REDIRECT_URL = 'login'
+
+# D8: endurecimiento HTTPS cuando se despliega (DEBUG desactivado)
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+SESSION_COOKIE_AGE = 60 * 60 * 2  # la sesión expira a las 2 horas
+
+# Registro de eventos de seguridad (OWASP A09 / ISO 27001 A.8.15)
+LOGGING = {
+    "version": 1,
+    "handlers": {"consola": {"class": "logging.StreamHandler"}},
+    "loggers": {
+        "barberclub.seguridad": {"handlers": ["consola"], "level": "WARNING"},
+        "barberclub.notificaciones": {"handlers": ["consola"], "level": "INFO"},
+    },
+}
