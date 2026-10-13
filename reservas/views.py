@@ -15,17 +15,31 @@ from .servicios.pagos import obtener_pasarela
 gestor = GestorReservas.obtener_instancia()
 
 
+def _entero_opcional(valor):
+    if valor in (None, ""):
+        return None
+    if not valor.isdigit():
+        raise ValueError(valor)
+    return int(valor)
+
+
 @login_required
 def disponibilidad(request):
     """RF-01: consulta de disponibilidad en las 4 sucursales (paso 2 de 4)."""
     sucursales = Sucursal.objects.all()
-    fecha = request.GET.get("fecha") or date.today().isoformat()
-    fecha_obj = date.fromisoformat(fecha)
+    # D6 (OWASP A05/A10): toda entrada se valida; un valor inválido responde 400, nunca error 500.
+    try:
+        fecha_obj = date.fromisoformat(request.GET.get("fecha") or date.today().isoformat())
+        id_sucursal = _entero_opcional(request.GET.get("sucursal"))
+        id_barbero = _entero_opcional(request.GET.get("barbero"))
+    except ValueError:
+        return HttpResponseBadRequest("Parámetros de búsqueda inválidos.")
+    fecha = fecha_obj.isoformat()
     barberos = Barbero.objects.select_related("sucursal")
-    if request.GET.get("sucursal"):
-        barberos = barberos.filter(sucursal_id=int(request.GET["sucursal"]))
-    if request.GET.get("barbero"):
-        barberos = barberos.filter(pk=int(request.GET["barbero"]))
+    if id_sucursal:
+        barberos = barberos.filter(sucursal_id=id_sucursal)
+    if id_barbero:
+        barberos = barberos.filter(pk=id_barbero)
     resultados = [(b, gestor.bloques_disponibles(b, fecha_obj)) for b in barberos]
     return render(request, "reservas/disponibilidad.html", {
         "sucursales": sucursales, "todos_barberos": Barbero.objects.all(), "resultados": resultados,
@@ -38,15 +52,21 @@ def disponibilidad(request):
 def agendar(request):
     """RF-02, RF-03, RF-09: confirmar bloque y servicio (paso 3 de 4)."""
     if request.method == "GET":
-        barbero = get_object_or_404(Barbero, pk=request.GET.get("barbero"))
+        try:
+            barbero = get_object_or_404(Barbero, pk=_entero_opcional(request.GET.get("barbero")))
+        except ValueError:
+            return HttpResponseBadRequest("Barbero inválido.")
         return render(request, "reservas/agendar.html", {
             "barbero": barbero, "fecha": request.GET.get("fecha"), "hora": request.GET.get("hora"),
             "servicios": Servicio.objects.all(),
         })
-    barbero = get_object_or_404(Barbero, pk=request.POST.get("barbero"))
-    servicio = get_object_or_404(Servicio, pk=request.POST.get("servicio"))
-    fecha = date.fromisoformat(request.POST["fecha"])
-    hora = datetime.strptime(request.POST["hora"], "%H:%M").time()
+    try:
+        barbero = get_object_or_404(Barbero, pk=_entero_opcional(request.POST.get("barbero")))
+        servicio = get_object_or_404(Servicio, pk=_entero_opcional(request.POST.get("servicio")))
+        fecha = date.fromisoformat(request.POST.get("fecha", ""))
+        hora = datetime.strptime(request.POST.get("hora", ""), "%H:%M").time()
+    except ValueError:
+        return HttpResponseBadRequest("Datos de reserva inválidos.")
     try:
         reserva = gestor.crear_reserva(
             request.user, barbero, servicio, fecha, hora, request.POST.get("tipo_corte_preferido", "").strip()
