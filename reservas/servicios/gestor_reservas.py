@@ -70,6 +70,9 @@ class GestorReservas:
     def crear_reserva(self, cliente, barbero, servicio, fecha, hora, tipo_corte_preferido=""):
         if hora not in self.bloques_del_dia(barbero, fecha):
             raise ReservaError("El bloque no corresponde al horario de la sucursal.")
+        # D3: no se permiten reservas en fechas u horas que ya pasaron.
+        if timezone.make_aware(datetime.combine(fecha, hora)) <= timezone.now():
+            raise ReservaError("No se puede agendar una hora que ya pasó.")
         try:
             with transaction.atomic():
                 # Bloqueo de la fila del barbero: serializa reservas simultáneas (RF-03).
