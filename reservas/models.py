@@ -82,8 +82,17 @@ class Reserva(models.Model):
     estado = models.CharField(max_length=20, choices=Estado.choices, default=Estado.PENDIENTE_PAGO)
     creada = models.DateTimeField(auto_now_add=True)
 
+    ESTADOS_QUE_BLOQUEAN = [Estado.PENDIENTE_PAGO, Estado.CONFIRMADA]
+
     class Meta:
         ordering = ["fecha", "hora"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["barbero", "fecha", "hora"],
+                condition=models.Q(estado__in=["PENDIENTE_PAGO", "CONFIRMADA"]),
+                name="un_bloque_activo_por_barbero",
+            )
+        ]
 
     @property
     def inicio(self):
