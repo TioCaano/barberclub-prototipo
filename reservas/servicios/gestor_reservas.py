@@ -105,10 +105,10 @@ class GestorReservas:
         ahora = ahora or timezone.now()
         if reserva.estado not in (Reserva.Estado.CONFIRMADA, Reserva.Estado.PENDIENTE_PAGO):
             raise ReservaError("La reserva no se puede cancelar en su estado actual.")
-        if reserva.inicio - ahora > ANTELACION_CANCELACION:
-            reembolsable = True
-        else:
+        # D2: "al menos 2 horas" incluye exactamente 2 h (>=, no >).
+        if reserva.inicio - ahora < ANTELACION_CANCELACION:
             raise ReservaError("Solo se puede cancelar con al menos 2 horas de antelación.")
+        reembolsable = True
         with transaction.atomic():
             reserva.estado = Reserva.Estado.CANCELADA
             reserva.save(update_fields=["estado"])
