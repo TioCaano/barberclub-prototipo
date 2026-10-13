@@ -31,6 +31,11 @@ def rol_requerido(*roles):
     return decorador
 
 
+def _solicitud_invalida(request, mensaje):
+    return render(request, "reservas/error.html", {"codigo": 400, "titulo": "Solicitud inválida",
+                                                   "mensaje": mensaje}, status=400)
+
+
 def _entero_opcional(valor):
     if valor in (None, ""):
         return None
@@ -49,7 +54,7 @@ def disponibilidad(request):
         id_sucursal = _entero_opcional(request.GET.get("sucursal"))
         id_barbero = _entero_opcional(request.GET.get("barbero"))
     except ValueError:
-        return HttpResponseBadRequest("Parámetros de búsqueda inválidos.")
+        return _solicitud_invalida(request, "Parámetros de búsqueda inválidos.")
     fecha = fecha_obj.isoformat()
     barberos = Barbero.objects.select_related("sucursal")
     if id_sucursal:
@@ -71,7 +76,7 @@ def agendar(request):
         try:
             barbero = get_object_or_404(Barbero, pk=_entero_opcional(request.GET.get("barbero")))
         except ValueError:
-            return HttpResponseBadRequest("Barbero inválido.")
+            return _solicitud_invalida(request, "Barbero inválido.")
         return render(request, "reservas/agendar.html", {
             "barbero": barbero, "fecha": request.GET.get("fecha"), "hora": request.GET.get("hora"),
             "servicios": Servicio.objects.all(),
@@ -82,7 +87,7 @@ def agendar(request):
         fecha = date.fromisoformat(request.POST.get("fecha", ""))
         hora = datetime.strptime(request.POST.get("hora", ""), "%H:%M").time()
     except ValueError:
-        return HttpResponseBadRequest("Datos de reserva inválidos.")
+        return _solicitud_invalida(request, "Datos de reserva inválidos.")
     try:
         reserva = gestor.crear_reserva(
             request.user, barbero, servicio, fecha, hora, request.POST.get("tipo_corte_preferido", "").strip()

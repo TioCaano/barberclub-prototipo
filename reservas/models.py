@@ -128,3 +128,9 @@ class Notificacion(models.Model):
     mensaje = models.TextField()
     tipo = models.CharField(max_length=20, default="CONFIRMACION")
     enviada_en = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = "notificaciones"
+
+    def __str__(self):
+        return f"{self.tipo} {self.canal} -> {self.destinatario}"
