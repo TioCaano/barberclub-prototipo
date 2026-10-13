@@ -117,7 +117,8 @@ def mis_reservas(request):
 @require_POST
 def cancelar(request, reserva_id):
     """RF-04 y RF-12: cancelar con 2 h de antelación y reembolso automático."""
-    reserva = get_object_or_404(Reserva, pk=reserva_id)
+    # D4 (OWASP A01): solo el dueño de la reserva puede cancelarla; si no, 404.
+    reserva = get_object_or_404(Reserva, pk=reserva_id, cliente=request.user)
     try:
         gestor.cancelar(reserva, obtener_pasarela())
         messages.success(request, "Reserva cancelada. Si pagaste anticipo, fue reembolsado.")
