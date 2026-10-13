@@ -63,7 +63,10 @@ def pago(request, reserva_id):
     reserva = get_object_or_404(Reserva, pk=reserva_id, cliente=request.user)
     anticipo = gestor.calcular_anticipo(reserva)
     if request.method == "POST":
-        monto = int(request.POST["monto"])
+        if reserva.estado != Reserva.Estado.PENDIENTE_PAGO:
+            return HttpResponseBadRequest("La reserva no está pendiente de pago.")
+        # D5 (OWASP A04/A08): el monto se calcula en el servidor; se ignora lo que envíe el navegador.
+        monto = anticipo
         pasarela = obtener_pasarela()
         token, url = pasarela.iniciar_pago(reserva.pk, monto, request.build_absolute_uri(reverse("retorno_pago")))
         Pago.objects.update_or_create(reserva=reserva, defaults={"monto": monto, "token": token,
@@ -90,6 +93,9 @@ def retorno_pago(request):
     pago_obj = get_object_or_404(Pago, token=token, reserva__cliente=request.user)
     reserva = pago_obj.reserva
     aprobado, monto = obtener_pasarela().confirmar_pago(token)
+    # D5: además se verifica que la pasarela haya autorizado exactamente el anticipo esperado.
+    if aprobado and monto != gestor.calcular_anticipo(reserva):
+        aprobado = False
     if aprobado:
         pago_obj.estado = Pago.Estado.APROBADO
         pago_obj.save(update_fields=["estado"])

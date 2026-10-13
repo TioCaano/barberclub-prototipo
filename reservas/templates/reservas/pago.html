@@ -3,6 +3,6 @@
 <div class="card"><table><tr><th>Barbero</th><td>{{ reserva.barbero.nombre }} – {{ reserva.barbero.sucursal.nombre }}</td></tr>
 <tr><th>Fecha y hora</th><td>{{ reserva.fecha }} {{ reserva.hora|time:"H:i" }}</td></tr><tr><th>Servicio</th><td>{{ reserva.servicio }}</td></tr>
 <tr><th>Anticipo a pagar</th><td><strong>${{ anticipo }}</strong></td></tr><tr><th>Estado</th><td><span class="estado {{ reserva.estado }}">{{ reserva.get_estado_display }}</span></td></tr></table>
-<form method="post" style="margin-top:14px">{% csrf_token %}<input type="hidden" name="monto" value="{{ anticipo }}">
+<form method="post" style="margin-top:14px">{% csrf_token %}
 <button class="btn" type="submit">Ir a pagar con Webpay</button></form>
 <p class="sub" style="margin-top:10px">Los datos de la tarjeta se ingresan en Webpay; BarberClub no los recibe ni almacena.</p></div>{% endblock %}
