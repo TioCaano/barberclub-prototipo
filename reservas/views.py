@@ -2,17 +2,33 @@ from datetime import date, datetime
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from functools import wraps
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
-from .models import Barbero, Pago, Reserva, Servicio, Sucursal
+from .models import Barbero, Cuenta, Pago, Reserva, Servicio, Sucursal
 from .servicios.gestor_reservas import GestorReservas, ReservaError
 from .servicios.notificaciones import NotificacionFactory
 from .servicios.pagos import obtener_pasarela
 
 gestor = GestorReservas.obtener_instancia()
+
+
+def rol_requerido(*roles):
+    """D7 (OWASP A01): restringe la vista a los roles indicados (RF-10)."""
+    def decorador(vista):
+        @wraps(vista)
+        @login_required
+        def envoltura(request, *args, **kwargs):
+            cuenta = getattr(request.user, "cuenta", None)
+            if cuenta is None or cuenta.rol not in roles:
+                raise PermissionDenied("Tu rol no permite realizar esta acción.")
+            return vista(request, *args, **kwargs)
+        return envoltura
+    return decorador
 
 
 def _entero_opcional(valor):
@@ -48,7 +64,7 @@ def disponibilidad(request):
     })
 
 
-@login_required
+@rol_requerido(Cuenta.Rol.CLIENTE)
 def agendar(request):
     """RF-02, RF-03, RF-09: confirmar bloque y servicio (paso 3 de 4)."""
     if request.method == "GET":
@@ -77,7 +93,7 @@ def agendar(request):
     return redirect("pago", reserva_id=reserva.pk)
 
 
-@login_required
+@rol_requerido(Cuenta.Rol.CLIENTE)
 def pago(request, reserva_id):
     """RF-11: cobro del anticipo del 30% (paso 4 de 4)."""
     reserva = get_object_or_404(Reserva, pk=reserva_id, cliente=request.user)
@@ -107,7 +123,7 @@ def webpay_simulado(request, token):
     return render(request, "reservas/webpay_simulado.html", {"token": token, "trx": trx})
 
 
-@login_required
+@rol_requerido(Cuenta.Rol.CLIENTE)
 def retorno_pago(request):
     token = request.GET.get("token_ws", "")
     pago_obj = get_object_or_404(Pago, token=token, reserva__cliente=request.user)
@@ -133,13 +149,13 @@ def retorno_pago(request):
     return redirect("mis_reservas")
 
 
-@login_required
+@rol_requerido(Cuenta.Rol.CLIENTE)
 def mis_reservas(request):
     reservas = Reserva.objects.filter(cliente=request.user).select_related("barbero__sucursal", "servicio")
     return render(request, "reservas/mis_reservas.html", {"reservas": reservas})
 
 
-@login_required
+@rol_requerido(Cuenta.Rol.CLIENTE)
 @require_POST
 def cancelar(request, reserva_id):
     """RF-04 y RF-12: cancelar con 2 h de antelación y reembolso automático."""
